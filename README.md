@@ -1,6 +1,6 @@
-# Easy SelfBot Discord with Ollama
+# Easy AI SelfBot Discord with Ollama
 
-This project is a Discord bot that uses the Ollama API to generate responses based on conversation context.
+This project is a Discord bot that uses AI models through Ollama API to generate contextual responses, maintaining conversation history when you're mentioned (@) in messages.
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
