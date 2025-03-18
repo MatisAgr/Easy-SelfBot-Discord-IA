@@ -2,6 +2,19 @@
 
 This project is a Discord bot that uses AI models through Ollama API to generate contextual responses, maintaining conversation history when you're mentioned (@) in messages.
 
+<h3> Preview : </h3>
+
+![image](https://github.com/user-attachments/assets/82f02218-0595-41bf-9963-c0cce5732fa1)
+
+
+<h3> Console : </h3>
+
+![image](https://github.com/user-attachments/assets/d63ac241-5022-42ab-a4bb-db647e27b178)
+
+
+---
+
+
 ## Table of Contents
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
