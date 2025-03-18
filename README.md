@@ -13,7 +13,7 @@ This project is a Discord bot that uses AI models through Ollama API to generate
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (v14 or higher) `(v22.12.0 used for dev)`
+- [Node.js](https://nodejs.org/) (v20.18 or higher) `(v22.12.0 used for dev)`
 - [Ollama](https://ollama.ai/download) - Local AI model runner
 - A Discord account and your Discord token ([How to get your Discord token](https://gist.github.com/MarvNC/e601f3603df22f36ebd3102c501116c6))
 
