@@ -150,7 +150,7 @@ client.on('messageCreate', async (message) => {
     if (history.length > 0) {
       fullPrompt += "Previous conversation:\n";
       history.forEach((entry) => {
-        fullPrompt += `${entry.author}: ${entry.content}\n`;
+        fullPrompt += `${entry.author} (${entry.author.username}): ${entry.content}\n`;
       });
       fullPrompt += "\n";
     }
