@@ -126,7 +126,7 @@ client.on('messageCreate', async (message) => {
   if (!message.mentions.has(client.user.id) || message.author.id === client.user.id) return;
   
   logger.separator();
-  logger.info(`Received mention from ${message.author.username} in channel ${message.channel.name || 'DM'}`);
+  logger.info(`Received mention from ${message.author.username} in channel ${'#'+message.channel.name || 'DM'}`);
   logger.info(`Message content: "${message.content}"`);
   
   try {
