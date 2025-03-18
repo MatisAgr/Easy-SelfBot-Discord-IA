@@ -58,7 +58,7 @@ The bot will connect to your Discord account and start listening for messages. I
 This project uses the following dependencies:
 - `discord.js-selfbot-v13`: To interact with the Discord API.
 - `dotenv`: To manage environment variables.
-- `node-fetch`: To make HTTP requests to the Ollama API.
+- `axios`: To make HTTP requests to the Ollama API.
 
 ## Technologies Used
 
