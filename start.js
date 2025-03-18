@@ -156,7 +156,7 @@ client.on('messageCreate', async (message) => {
     }
     
     // Add current message
-    fullPrompt += `Message you're responding to: ${message.content}`;
+    fullPrompt += `${message.content}`;
     
     // Prepare request to Ollama
     const payload = {
@@ -181,11 +181,17 @@ client.on('messageCreate', async (message) => {
     // Format <think> tags as quotes
     generatedResponse = formatThinkTags(generatedResponse);
     
-    // Truncate if needed
+    // Truncate (if >2000 characters)
     generatedResponse = truncateMessage(generatedResponse);
     
+    if (generatedResponse.length > 200) {
+      logger.info(`Generated response: "${generatedResponse.substring(0, 200)}..."`);
+    } else {
+      logger.info(`Generated response: "${generatedResponse}"`);
+    }
+
     // Reply in the same channel
-    logger.info(`Sending reply to channel ${message.channel.name || 'DM'}`);
+    logger.info(`Sending reply to channel ${message.channel.name || 'DM'}`); // DM not fonctional yet
     await message.reply(generatedResponse);
     
     // Update history

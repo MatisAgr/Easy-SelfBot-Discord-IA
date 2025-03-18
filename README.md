@@ -2,6 +2,11 @@
 
 This project is a Discord bot that uses AI models through Ollama API to generate contextual responses, maintaining conversation history when you're mentioned (@) in messages.
 
+> [!CAUTION]
+> **This project uses a selfbot which violates [Discord's Terms of Service (ToS)](https://discord.com/terms).**
+> **I am NOT responsible if your Discord account gets suspended or banned for using this code.**
+> **Always use a secondary/alternative account token for this project to avoid losing access to your main account.**
+
 <h3> Preview : </h3>
 
 ![image](https://github.com/user-attachments/assets/82f02218-0595-41bf-9963-c0cce5732fa1)
@@ -69,13 +74,13 @@ The bot will connect to your Discord account and start listening for messages. I
 ## Dependencies
 
 This project uses the following dependencies:
-- `discord.js-selfbot-v13`: To interact with the Discord API.
+- `discord.js-selfbot-v13`: To interact with the Discord API. 
 - `dotenv`: To manage environment variables.
 - `axios`: To make HTTP requests to the Ollama API.
 
 ## Technologies Used
 
 - **Node.js** - JavaScript runtime
-- **Discord.js-selfbot-v13** - Discord API wrapper for user accounts
+- **[Discord.js-selfbot-v13](https://github.com/aiko-chan-ai/discord.js-selfbot-v13)** - Discord API wrapper for user accounts
 - **Ollama** - Open-source model runner for LLMs
 - **Environment Variables** - For secure configuration management
