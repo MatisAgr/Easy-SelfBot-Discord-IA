@@ -27,8 +27,9 @@ let baseUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
 const OLLAMA_API_URL = baseUrl.endsWith('/api/generate') ? baseUrl : `${baseUrl}/api/generate`;
 const MODEL = process.env.OLLAMA_MODEL || '';
 const MY_TOKEN = process.env.DISCORD_TOKEN;
+const SHOW_THINKING = (process.env.SHOW_THINKING || 'false').toLowerCase() === 'true';
 
-// Discord message character limit
+// Discord message character limit (free accounts)
 const MESSAGE_CHAR_LIMIT = 2000;
 
 // Structure to store conversation history by channel
@@ -43,6 +44,7 @@ logger.info('Starting Discord self-bot...');
 logger.info(`Ollama API URL: ${OLLAMA_API_URL}`);
 logger.info(`Model: ${MODEL || 'Not specified (will use Ollama default)'}`);
 logger.info(`History limit: ${HISTORY_LIMIT} messages per channel`);
+logger.info(`Show thinking : ${SHOW_THINKING}`);
 logger.separator();
 
 client.on('ready', () => {
@@ -54,19 +56,26 @@ client.on('ready', () => {
 function formatThinkTags(text) {
   // Check if text contains <think> tags
   if (text.includes('<think>') && text.includes('</think>')) {
-    logger.info('Found <think> tags in response, formatting as quotes');
-    
-    // Replace each <think> block with a quote format
-    return text.replace(/<think>([\s\S]*?)<\/think>/g, (match, content) => {
-      // Convert the content to quote format by adding > to each line
-      const quoteContent = content
-        .trim()
-        .split('\n')
-        .map(line => `> ${line}`)
-        .join('\n');
+    if (SHOW_THINKING) {
+      logger.info('Found <think> tags in response, formatting as quotes');
       
-      return quoteContent;
-    });
+      // Replace each <think> block with a quote format
+      return text.replace(/<think>([\s\S]*?)<\/think>/g, (match, content) => {
+        // Convert the content to quote format by adding > to each line
+        const quoteContent = content
+          .trim()
+          .split('\n')
+          .map(line => `> ${line}`)
+          .join('\n');
+        
+        return quoteContent;
+      });
+    } else {
+      logger.info('Found <think> tags in response, removing them');
+      
+      // Remove each <think> block completely
+      return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    }
   }
   
   return text;
