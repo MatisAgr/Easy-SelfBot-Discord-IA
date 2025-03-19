@@ -52,13 +52,29 @@ client.on('ready', () => {
   logger.separator();
 });
 
+// Function to check if the bot can send messages in a channel
+function canSendMessages(channel) {
+  try {
+    // For text channels in guilds
+    if (channel.guild) {
+      const permissions = channel.permissionsFor(client.user.id);
+      return permissions && permissions.has('SEND_MESSAGES');
+    }
+    // For DMs, we assume we can send messages
+    return true;
+  } catch (error) {
+    logger.error(`Error checking permissions: ${error.message}`);
+    return false;
+  }
+}
+
 // Function to format <think> tags as quotes
 function formatThinkTags(text) {
   // Check if text contains <think> tags
   if (text.includes('<think>') && text.includes('</think>')) {
     if (SHOW_THINKING) {
       logger.info('Found <think> tags in response, formatting as quotes');
-      
+
       // Replace each <think> block with a quote format
       return text.replace(/<think>([\s\S]*?)<\/think>/g, (match, content) => {
         // Convert the content to quote format by adding > to each line
@@ -67,17 +83,17 @@ function formatThinkTags(text) {
           .split('\n')
           .map(line => `> ${line}`)
           .join('\n');
-        
+
         return quoteContent;
       });
     } else {
       logger.info('Found <think> tags in response, removing them');
-      
+
       // Remove each <think> block completely
       return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     }
   }
-  
+
   return text;
 }
 
@@ -86,7 +102,7 @@ function truncateMessage(message) {
   if (message.length <= MESSAGE_CHAR_LIMIT) {
     return message;
   }
-  
+
   logger.warn(`Message exceeds ${MESSAGE_CHAR_LIMIT} characters, truncating...`);
   return message.substring(0, MESSAGE_CHAR_LIMIT - 3) + '...';
 }
@@ -94,23 +110,33 @@ function truncateMessage(message) {
 // Function to keep showing "typing..." indication during long operations
 async function showTypingUntilDone(channel, operation) {
   // Start typing indication
+  let hasTypingPermission = true;
+
   const typingInterval = setInterval(() => {
-    channel.sendTyping().catch(err => {
-      logger.error(`Failed to send typing indicator: ${err.message}`);
-      clearInterval(typingInterval);
-    });
+    if (hasTypingPermission) {
+      channel.sendTyping().catch(err => {
+        if (err.code === 50001) { // Missing Access error code
+          logger.warn(`No permission to show typing in channel #${channel.name || 'DM'}`);
+          hasTypingPermission = false; // Stop trying to send typing indicators
+          clearInterval(typingInterval);
+        } else {
+          logger.error(`Failed to send typing indicator: ${err.message}`);
+          clearInterval(typingInterval);
+        }
+      });
+    }
   }, 5000); // Discord typing indicator lasts ~10 seconds, refresh every 5s
-  
+
   logger.info('Started typing indicator');
-  
+
   try {
     // Wait for the operation to complete
     const result = await operation();
-    
+
     // Stop typing indication
     clearInterval(typingInterval);
     logger.info('Stopped typing indicator');
-    
+
     return result;
   } catch (error) {
     // Stop typing indication on error too
@@ -124,28 +150,44 @@ async function showTypingUntilDone(channel, operation) {
 client.on('messageCreate', async (message) => {
 
   if (!message.mentions.has(client.user.id) || message.author.id === client.user.id) return;
-  
+
   logger.separator();
-  logger.info(`Received mention from ${message.author.username} in channel ${'#'+message.channel.name || 'DM'}`);
+  logger.info(`Received mention from ${message.author.username} in channel ${'#' + message.channel.name || 'DM'}`);
   logger.info(`Message content: "${message.content}"`);
-  
+
   try {
-    // Show typing indicator immediately
-    message.channel.sendTyping();
-    logger.info('Started typing indicator');
+    // Check if the bot has permission to send messages in the channel
+    const hasPermission = canSendMessages(message.channel);
     
+    // If the bot doesn't have permission, log a warning and exit early
+    if (!hasPermission) {
+      logger.warn(`No permission to send messages in channel #${message.channel.name || 'DM'} - skipping Ollama API call`);
+      logger.separator();
+      return; // Exit early to avoid unnecessary API call
+    }
+
+    // Show typing indicator
+    message.channel.sendTyping().catch(err => {
+      if (err.code === 50001) {
+        logger.warn(`No permission to show typing in channel #${message.channel.name || 'DM'}`);
+      } else {
+        logger.error(`Failed to send typing indicator: ${err.message}`);
+      }
+    });
+    logger.info('Started typing indicator');
+
     // Get or initialize channel history
     const channelId = message.channel.id;
     if (!conversationHistory.has(channelId)) {
       logger.info(`Initializing new conversation history for channel ${message.channel.name || 'DM'}`);
       conversationHistory.set(channelId, []);
     }
-    
+
     const history = conversationHistory.get(channelId);
-    
+
     // Build prompt with context and history
     let fullPrompt = BOT_CONTEXT + "\n\n";
-    
+
     // Add history if available
     if (history.length > 0) {
       fullPrompt += "Previous conversation:\n";
@@ -154,10 +196,10 @@ client.on('messageCreate', async (message) => {
       });
       fullPrompt += "\n";
     }
-    
+
     // Add current message
     fullPrompt += `${message.content}`;
-    
+
     // Prepare request to Ollama
     const payload = {
       model: MODEL,
@@ -166,24 +208,24 @@ client.on('messageCreate', async (message) => {
     };
 
     logger.info(`Sending request to Ollama API with model: ${MODEL || 'default'}`);
-    
+
     // Use the typing indicator function to keep showing "typing..." during API call
     const response = await showTypingUntilDone(message.channel, async () => {
       return await axios.post(OLLAMA_API_URL, payload, {
         headers: { 'Content-Type': 'application/json' }
       });
     });
-    
+
     logger.success(`Received response from Ollama`);
-    
+
     let generatedResponse = response.data.response;
-    
+
     // Format <think> tags as quotes
     generatedResponse = formatThinkTags(generatedResponse);
-    
+
     // Truncate (if >2000 characters)
     generatedResponse = truncateMessage(generatedResponse);
-    
+
     if (generatedResponse.length > 200) {
       logger.info(`Generated response: "${generatedResponse.substring(0, 200)}..."`);
     } else {
@@ -191,19 +233,28 @@ client.on('messageCreate', async (message) => {
     }
 
     // Reply in the same channel
-    logger.info(`Sending reply to channel ${message.channel.name || 'DM'}`); // DM not fonctional yet
-    await message.reply(generatedResponse);
-    
+    try {
+      logger.info(`Sending reply to channel ${message.channel.name || 'DM'}`);
+      await message.reply(generatedResponse);
+    } catch (replyError) {
+      if (replyError.code === 50001 || replyError.code === 50013) {
+        logger.warn(`Cannot reply in channel #${message.channel.name || 'DM'} due to missing permissions`);
+        logger.info(`Generated response that couldn't be delivered: "${generatedResponse.substring(0, 200)}${generatedResponse.length > 200 ? '...' : ''}"`);
+      } else {
+        throw replyError;
+      }
+    }
+
     // Update history
     history.push({ author: message.author.username, content: message.content });
     history.push({ author: client.user.username, content: generatedResponse });
-    
+
     // Limit history size
     if (history.length > HISTORY_LIMIT * 2) { // *2 because we store question/answer pairs
       logger.info(`Trimming conversation history for channel ${message.channel.name || 'DM'}`);
       history.splice(0, 2); // Delete the oldest question/answer pair
     }
-    
+
   } catch (error) {
     logger.error(`Error calling Ollama: ${error.message}`);
     if (error.response) {
