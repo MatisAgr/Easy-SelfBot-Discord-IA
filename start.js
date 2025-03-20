@@ -32,7 +32,8 @@ const SHOW_THINKING = (process.env.SHOW_THINKING || 'false').toLowerCase() === '
 // Discord message character limit (free accounts)
 const MESSAGE_CHAR_LIMIT = 2000;
 const lastActivityTime = new Map();
-// Durée d'inactivité avant réinitialisation (en ms) - 5 minutes
+// Inactivity duration before reset (in ms) - 5 minutes
+// TEMPORARY SOLUTION: Simple timeout mechanism for memory optimization
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
 
 // Structure to store conversation history by channel
@@ -153,22 +154,23 @@ async function showTypingUntilDone(channel, operation) {
 
 /*******************************/
 // Inactivity timeout handling
+// TEMPORARY SOLUTION: Using basic timeout for better stability. Will be enhanced in future versions.
 /*******************************/
 
 function checkInactiveChannels() {
   const currentTime = Date.now();
   
   lastActivityTime.forEach((lastTime, channelId) => {
-    // Si plus de 5 minutes se sont écoulées depuis la dernière activité
+    // If more than 5 minutes have passed since the last activity
     if (currentTime - lastTime > INACTIVITY_TIMEOUT) {
-      // S'il y a un historique pour ce canal
+      // If there is a history for this channel
       if (conversationHistory.has(channelId)) {
         const channelInfo = client.channels.cache.get(channelId);
         const channelName = channelInfo ? (channelInfo.name || 'DM') : 'Unknown channel';
         
         logger.info(`Resetting conversation history for inactive channel #${channelName} (${channelId})`);
-        conversationHistory.set(channelId, []); // Réinitialiser l'historique
-        lastActivityTime.delete(channelId); // Supprimer l'entrée de temps pour ce canal
+        conversationHistory.set(channelId, []); // Reset the history
+        lastActivityTime.delete(channelId); // Delete the time entry for this channel
       }
     }
   });
@@ -177,8 +179,8 @@ function checkInactiveChannels() {
 client.on('ready', () => {
   logger.success(`Connected as ${client.user.tag}`);
   
-  // Mettre en place un intervalle pour vérifier régulièrement les canaux inactifs
-  setInterval(checkInactiveChannels, 60000); // Vérifier toutes les minutes
+  // Set up an interval to regularly check inactive channels
+  setInterval(checkInactiveChannels, 60000); // Check every minute
   logger.info('Inactivity checker initialized (5 minute timeout)');
   
   logger.separator();
@@ -309,7 +311,7 @@ client.on('messageCreate', async (message) => {
   logger.separator();
 });
 
-
+/******************************/
 
 client.login(MY_TOKEN)
   .then(() => logger.info('Login process started'))
