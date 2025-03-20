@@ -37,6 +37,7 @@ PARAMETER num_gpu 1             # Number of GPUs to use for inference
 
 # === GENERATION PARAMETERS ===
 # These control the quality and style of the model's responses
+# More here : https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values
 
 PARAMETER temperature 0.7    # Controls randomness (0.0 = deterministic, 1.0 = creative)
 PARAMETER top_p 0.9          # Nucleus sampling - diversity control
