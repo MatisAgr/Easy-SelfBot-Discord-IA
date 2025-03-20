@@ -33,7 +33,7 @@ Remember details about users you interact with to provide personalized assistanc
 PARAMETER num_ctx 32768         # Expanded context length (32K tokens ≈ 24000 words)
                                 # Can be increased up to 128K if your hardware supports it
 PARAMETER num_gpu 1             # Number of GPUs to use for inference
-#olaPARAMETER num_thread 8      # CPU threads for processing (adjust based on your hardware)
+#PARAMETER num_thread 8      # CPU threads for processing (adjust based on your hardware)
 
 # === GENERATION PARAMETERS ===
 # These control the quality and style of the model's responses
