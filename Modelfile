@@ -99,5 +99,9 @@ PARAMETER numa false         # Disable NUMA optimization for single-socket syste
 # - Adjust num_ctx based on your hardware capabilities
 # - For most desktop systems, 16K-32K is a good balance
 
+# === BUILD COMMAND ===
+# - ollama create choose-a-model-name -f <location of the file e.g. ./Modelfile>
+# - Change the model name in .env to use
+
 # For complete documentation and more examples, visit:
 # https://github.com/ollama/ollama/blob/main/docs/modelfile.md
