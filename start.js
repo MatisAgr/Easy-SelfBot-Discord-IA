@@ -31,13 +31,16 @@ const SHOW_THINKING = (process.env.SHOW_THINKING || 'false').toLowerCase() === '
 
 // Discord message character limit (free accounts)
 const MESSAGE_CHAR_LIMIT = 2000;
+const lastActivityTime = new Map();
+// Durée d'inactivité avant réinitialisation (en ms) - 5 minutes
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
 
 // Structure to store conversation history by channel
 const conversationHistory = new Map();
 // Limit of history messages to keep per channel
 const HISTORY_LIMIT = parseInt(process.env.HISTORY_LIMIT || '10', 10);
 // Initial bot context
-const BOT_CONTEXT = process.env.BOT_CONTEXT || "You are a helpful and friendly Discord assistant. Respond concisely and relevantly.";
+const BOT_CONTEXT = process.env.BOT_CONTEXT || "Do what do you want, but be nice and respectful.";
 
 logger.separator();
 logger.info('Starting Discord self-bot...');
@@ -146,10 +149,50 @@ async function showTypingUntilDone(channel, operation) {
   }
 }
 
+
+
+/*******************************/
+// Inactivity timeout handling
+/*******************************/
+
+function checkInactiveChannels() {
+  const currentTime = Date.now();
+  
+  lastActivityTime.forEach((lastTime, channelId) => {
+    // Si plus de 5 minutes se sont écoulées depuis la dernière activité
+    if (currentTime - lastTime > INACTIVITY_TIMEOUT) {
+      // S'il y a un historique pour ce canal
+      if (conversationHistory.has(channelId)) {
+        const channelInfo = client.channels.cache.get(channelId);
+        const channelName = channelInfo ? (channelInfo.name || 'DM') : 'Unknown channel';
+        
+        logger.info(`Resetting conversation history for inactive channel #${channelName} (${channelId})`);
+        conversationHistory.set(channelId, []); // Réinitialiser l'historique
+        lastActivityTime.delete(channelId); // Supprimer l'entrée de temps pour ce canal
+      }
+    }
+  });
+}
+
+client.on('ready', () => {
+  logger.success(`Connected as ${client.user.tag}`);
+  
+  // Mettre en place un intervalle pour vérifier régulièrement les canaux inactifs
+  setInterval(checkInactiveChannels, 60000); // Vérifier toutes les minutes
+  logger.info('Inactivity checker initialized (5 minute timeout)');
+  
+  logger.separator();
+});
+
 // Listen for incoming messages
 client.on('messageCreate', async (message) => {
 
   if (!message.mentions.has(client.user.id) || message.author.id === client.user.id) return;
+
+  // last activity
+  const channelId = message.channel.id;
+  lastActivityTime.set(channelId, Date.now());
+
 
   logger.separator();
   logger.info(`Received mention from ${message.author.username} in channel ${'#' + message.channel.name || 'DM'}`);
@@ -217,7 +260,7 @@ client.on('messageCreate', async (message) => {
     });
 
     logger.success(`Received response from Ollama`);
-
+    lastActivityTime.set(channelId, Date.now());
     let generatedResponse = response.data.response;
 
     // Format <think> tags as quotes
@@ -265,6 +308,8 @@ client.on('messageCreate', async (message) => {
   }
   logger.separator();
 });
+
+
 
 client.login(MY_TOKEN)
   .then(() => logger.info('Login process started'))

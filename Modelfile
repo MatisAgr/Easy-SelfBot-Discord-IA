@@ -11,8 +11,9 @@
 
 # === BASIC DIRECTIVES ===
 
-FROM deepseek-r1:14b  # Specifies the base model (DeepSeek 14B is a powerful model with strong reasoning abilities)
-                      # Use `ollama list` to see all available models on your system
+#    - Specifies the base model (DeepSeek 14B is a powerful model with strong reasoning abilities)
+#       Use `ollama list` to see all available models on your system
+FROM deepseek-r1:14b
 
 # SYSTEM <prompt>: Sets the system prompt that guides the model's behavior
 # This is the most important part to customize your assistant's personality
@@ -29,31 +30,39 @@ Remember details about users you interact with to provide personalized assistanc
 # These parameters control how much conversation history the model can process
 # DeepSeek supports up to 128K tokens of context - one of the largest windows available!
 # Note: Higher values require significantly more RAM and GPU memory
+#   - Discord free account limited to 2000 character (≈600 tokens)
+#       The code (start.js) is already provided to truncate the message if > 2000 characters
 
-PARAMETER num_ctx 32768         # Expanded context length (32K tokens ≈ 24000 words)
-                                # Can be increased up to 128K if your hardware supports it
-PARAMETER num_gpu 1             # Number of GPUs to use for inference
-#olaPARAMETER num_thread 8      # CPU threads for processing (adjust based on your hardware)
+
+#   - Expanded context length (32K tokens ≈ 24000 words)
+#       Can be increased up to 128K if your hardware supports it
+PARAMETER num_ctx 32768
+#   - Number of GPUs to use for inference
+PARAMETER num_gpu 1
+#   - CPU threads for processing (adjust based on your hardware)
+# PARAMETER num_thread 8
 
 # === GENERATION PARAMETERS ===
 # These control the quality and style of the model's responses
+# More here : https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values
 
-PARAMETER temperature 0.7    # Controls randomness (0.0 = deterministic, 1.0 = creative)
-PARAMETER top_p 0.9          # Nucleus sampling - diversity control
-PARAMETER top_k 40           # Limits token selection to top K options
-PARAMETER repeat_penalty 1.1 # Penalizes repetition (higher = less repetition)
+#   - Controls randomness (0.0 = deterministic, 1.0 = creative)
+PARAMETER temperature 0.7
+#   - Nucleus sampling - diversity control
+PARAMETER top_p 0.9
+#   - Limits token selection to top K options
+PARAMETER top_k 40
+#   - Penalizes repetition (higher = less repetition)
+PARAMETER repeat_penalty 1.1
 
 # === OUTPUT TOKENS ===
 # DeepSeek can generate up to 32K tokens in a single response
 # This is excellent for long-form content like documentation or code
 
-PARAMETER max_tokens 700    # Optimized for Discord's 2000 character limit (≈600 tokens)
-                            # Default setting avoids truncation in most responses
-                            # Can be increased if you handle message splitting in your code
-
 # === DEEPSEEK-SPECIFIC TEMPLATE ===
 # This template is specifically formatted for the DeepSeek conversation format
 # The special tokens control the conversation flow
+# Check the model file of your model (`ollama show --modelfile your-model`)
 
 TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
 {{- range $i, $_ := .Messages }}
@@ -72,13 +81,6 @@ PARAMETER stop <｜begin▁of▁sentence｜>
 PARAMETER stop <｜end▁of▁sentence｜>
 PARAMETER stop <｜User｜>
 PARAMETER stop <｜Assistant｜>
-
-# === MEMORY OPTIMIZATION ===
-# These parameters help manage memory usage for longer contexts
-
-PARAMETER f16 true           # Use 16-bit floating point (saves memory)
-PARAMETER mlock false        # Don't lock model in RAM if memory is limited
-PARAMETER numa false         # Disable NUMA optimization for single-socket systems
 
 # === HARDWARE REQUIREMENTS ===
 # - For 32K context: Minimum 16GB GPU VRAM recommended
@@ -100,7 +102,11 @@ PARAMETER numa false         # Disable NUMA optimization for single-socket syste
 # - For most desktop systems, 16K-32K is a good balance
 
 # === BUILD COMMAND ===
+<<<<<<< HEAD
 # - ollama create choose-a-model-name -f <location of the file e.g. ./Modelfile>
+=======
+# - `ollama create choose-a-model-name -f <location of the file e.g. ./Modelfile>`
+>>>>>>> aa2c3b92a37a106df2d0f8dc36d28e391a35cda2
 # - Change the model name in .env to use
 
 # For complete documentation and more examples, visit:
