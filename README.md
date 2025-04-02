@@ -56,12 +56,37 @@ Before you begin, ensure you have the following installed:
 
 1. Rename the `.env.exemple` file to `.env`.
 2. Fill in the environment variables in the `.env` file:
-   - `DISCORD_TOKEN`: Your Discord token.
-   - `HISTORY_LIMIT`: The number of messages to keep in the conversation history.
-   - `OLLAMA_API_URL`: The URL of the Ollama API.
-   - `OLLAMA_MODEL`: The name of the model to use with Ollama.
+   - `DISCORD_TOKEN`: Your Discord token (get it [here](https://gist.github.com/MarvNC/e601f3603df22f36ebd3102c501116c6)).
+   - `HISTORY_LIMIT`: The number of message pairs to keep in the conversation history.
+   - `OLLAMA_API_URL`: The URL of the Ollama API (default: "http://localhost:11434").
+   - `OLLAMA_MODEL`: The name of the model to use with Ollama (check available models with `ollama list`).
    - `BOT_CONTEXT`: The context for the bot when generating responses.
+   - `SHOW_THINKING`: Whether to show the bot's thinking process in Discord messages (default: false).
+   - `LOG_CONVERSATIONS`: Whether to log conversations to a file (default: false).
+   - `LOGS_FILE_PATH`: Path to the conversation logs file (default: "./conversations_log.json").
+   - `SAVE_MEMORY`: Whether to save the bot's memory (prompts) to files for debugging (default: false).
+   - `MEMORY_FOLDER`: Directory where memory files will be stored (default: "./debug_bot_memory").
 
+#### Memory Debugging
+
+When `SAVE_MEMORY` is enabled, the bot will save its raw prompts in the specified `MEMORY_FOLDER` organized by:
+- Server name
+- Channel name
+- Timestamp and author
+
+This feature helps you debug how the bot's "memory" works and what data is being sent to the AI model. Files are organized with the following structure:
+```
+debug_bot_memory/
+  ├── ServerName/
+  │   ├── channel-name/
+  │   │   ├── raw_prompt_username_123456.txt
+  │   │   └── raw_prompt_username_123457.txt
+  └── DirectMessages/
+      └── direct/
+          └── raw_prompt_username_123458.txt
+```
+
+Each file contains the exact prompt sent to Ollama, including the context, conversation history, and current message.
 ## Usage
 
 To start the bot, run the following command:
