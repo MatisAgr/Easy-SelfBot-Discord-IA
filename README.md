@@ -1,4 +1,5 @@
 # Easy AI SelfBot Discord with Ollama
+[![wakatime](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600.svg)](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600)
 
 This project is a Discord bot that uses AI models through Ollama API to generate contextual responses, maintaining conversation history when you're mentioned (@) in messages.
 
