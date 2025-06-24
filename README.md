@@ -1,7 +1,7 @@
 # Easy AI SelfBot Discord with Ollama
 [![wakatime](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600.svg)](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600)
 
-This project is a Discord bot that uses AI models through Ollama API to generate contextual responses, maintaining conversation history when you're mentioned (@) in messages.
+This project is a Discord bot that uses AI models through Ollama API to generate contextual responses. It maintains both conversation history with the bot and recent channel message history to understand conversation context even when joining discussions mid-conversation.
 
 > [!CAUTION]
 > **This project uses a selfbot which violates [Discord's Terms of Service (ToS)](https://discord.com/terms).**
@@ -58,19 +58,21 @@ Before you begin, ensure you have the following installed:
 1. Rename the `.env.exemple` file to `.env`.
 2. Fill in the environment variables in the `.env` file:
    - `DISCORD_TOKEN`: Your Discord token (get it [here](https://gist.github.com/MarvNC/e601f3603df22f36ebd3102c501116c6)).
-   - `HISTORY_LIMIT`: The number of message pairs to keep in the conversation history.
+   - `HISTORY_LIMIT`: The number of bot conversation pairs to keep in memory (default: 10).
+   - `USE_HISTORY_CONVERSATION`: Whether to enable channel message history tracking (default: true).
+   - `NB_MESSAGES_HISTORY`: Number of recent channel messages to keep for context (default: 10).
    - `OLLAMA_API_URL`: The URL of the Ollama API (default: "http://localhost:11434").
    - `OLLAMA_MODEL`: The name of the model to use with Ollama (check available models with `ollama list`).
    - `BOT_CONTEXT`: The context for the bot when generating responses.
    - `SHOW_THINKING`: Whether to show the bot's thinking process in Discord messages (default: false).
    - `LOG_CONVERSATIONS`: Whether to log conversations to a file (default: false).
    - `LOGS_FILE_PATH`: Path to the conversation logs file (default: "./conversations_log.json").
-   - `SAVE_MEMORY`: Whether to save the bot's memory (prompts) to files for debugging (default: false).
+   - `DEBUG_MODE`: Whether to save the bot's memory (prompts) to files for debugging (default: false).
    - `MEMORY_FOLDER`: Directory where memory files will be stored (default: "./debug_bot_memory").
 
 #### Memory Debugging
 
-When `SAVE_MEMORY` is enabled, the bot will save its raw prompts in the specified `MEMORY_FOLDER` organized by:
+When `DEBUG_MODE` is enabled, the bot will save its raw prompts in the specified `MEMORY_FOLDER` organized by:
 - Server name
 - Channel name
 - Timestamp and author
@@ -95,7 +97,14 @@ To start the bot, run the following command:
 node start.js
 ```
 
-The bot will connect to your Discord account and start listening for messages. It will respond to messages where it's mentioned.
+The bot will connect to your Discord account and start listening for messages. It will respond to messages where it's mentioned and automatically track channel conversations for context.
+
+**Key behaviors:**
+- Responds only when explicitly mentioned (@) or replied to
+- Tracks all channel messages in real-time for context (optional)
+- Maintains separate memory per channel
+- Automatically manages memory limits to prevent overflow
+- Resets inactive channel memories after 5 minutes
 
 ## Dependencies
 
