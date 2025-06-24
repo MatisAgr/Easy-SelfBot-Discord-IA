@@ -26,13 +26,13 @@ const logger = {
 
 const client = new Client();
 let baseUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
-const OLLAMA_API_URL = baseUrl.endsWith('/api/generate') ? baseUrl : `${baseUrl}/api/generate`;
+const OLLAMA_API_URL = baseUrl.endsWith('/api/chat') ? baseUrl : `${baseUrl}/api/chat`;
 const MODEL = process.env.OLLAMA_MODEL || '';
 const MY_TOKEN = process.env.DISCORD_TOKEN;
 const SHOW_THINKING = (process.env.SHOW_THINKING || 'false').toLowerCase() === 'true';
 const LOG_CONVERSATIONS = (process.env.LOG_CONVERSATIONS || 'true').toLowerCase() === 'true';
 const LOGS_FILE_PATH = process.env.LOGS_FILE_PATH || path.join(__dirname, 'conversations_log.json');
-const SAVE_MEMORY = (process.env.SAVE_MEMORY || 'true').toLowerCase() === 'true';
+const DEBUG_MODE = (process.env.DEBUG_MODE || 'true').toLowerCase() === 'true';
 const MEMORY_FOLDER = process.env.MEMORY_FOLDER || path.join(__dirname, 'bot_memory');
 
 // Discord message character limit (free accounts)
@@ -59,7 +59,7 @@ logger.info(`Log conversations: ${LOG_CONVERSATIONS}`);
 if (LOG_CONVERSATIONS) {
   logger.info(`Log file path: ${LOGS_FILE_PATH}`);
 }
-if (SAVE_MEMORY) {
+if (DEBUG_MODE) {
   logger.info(`Saving bot memory to ${MEMORY_FOLDER}`);
   if (!fs.existsSync(MEMORY_FOLDER)) {
     try {
@@ -95,6 +95,12 @@ function canSendMessages(channel) {
 
 // Function to format <think> tags as quotes
 function formatThinkTags(text) {
+  // Vérifier que text est défini et est une chaîne
+  if (!text || typeof text !== 'string') {
+    logger.warn(`formatThinkTags received invalid input: ${typeof text}, value: ${text}`);
+    return '';
+  }
+
   // Check if text contains <think> tags
   if (text.includes('<think>') && text.includes('</think>')) {
     if (SHOW_THINKING) {
@@ -303,11 +309,16 @@ client.on('messageCreate', async (message) => {
       return await axios.post(OLLAMA_API_URL, payload, {
         headers: { 'Content-Type': 'application/json' }
       });
-    });
+    }); logger.success(`Received response from Ollama`);
 
-    logger.success(`Received response from Ollama`);
+    if (DEBUG_MODE) {
+      logger.info('=== DEBUG: Full Ollama Response ===');
+      console.log(JSON.stringify(response.data, null, 2));
+      logger.info('=== END DEBUG ===');
+    }
+
     lastActivityTime.set(channelId, Date.now());
-    let generatedResponse = response.data.response;
+    let generatedResponse = response.data.message.content;
 
     // Format <think> tags as quotes
     generatedResponse = formatThinkTags(generatedResponse);
@@ -430,7 +441,7 @@ function logConversation(userData, botResponse) {
 /*******************************/
 
 function saveMemoryToFile(fullPrompt, serverName, channelName, authorUsername) {
-  if (!SAVE_MEMORY) return;
+  if (!DEBUG_MODE) return;
 
   try {
     // Assurez-vous que fullPrompt est une chaîne
