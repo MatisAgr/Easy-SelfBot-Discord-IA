@@ -1,5 +1,18 @@
-# Easy AI SelfBot Discord with Ollama
-[![wakatime](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600.svg)](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600)
+<div align="center">
+
+   # Easy AI SelfBot Discord with Ollama
+
+   <div>
+
+   <img src="https://i0.wp.com/nginxstore.com/wp-content/uploads/2025/04/ollama.png?fit=1024%2C1024&ssl=1" alt="Ollama Logo" width="100" height="100">
+   <img src="https://babbar.academy/wp-content/uploads/2023/04/discord.png" alt="Discord Logo" width="100" height="100">
+   
+
+   </div>
+
+   [![wakatime](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600.svg)](https://wakatime.com/badge/user/a16f794f-b91d-4818-8dfc-d768ce605ece/project/074b7170-1d87-4125-937c-fa7b6ac62600)
+
+</div>
 
 This project is a Discord bot that uses AI models through Ollama API to generate contextual responses. It maintains both conversation history with the bot and recent channel message history to understand conversation context even when joining discussions mid-conversation.
 
