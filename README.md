@@ -4,8 +4,8 @@
 
    <div>
 
-   <img src="https://i0.wp.com/nginxstore.com/wp-content/uploads/2025/04/ollama.png?fit=1024%2C1024&ssl=1" alt="Ollama Logo" width="100" height="100">
-   <img src="https://babbar.academy/wp-content/uploads/2023/04/discord.png" alt="Discord Logo" width="100" height="100">
+   <img src="https://img.utdstc.com/icon/6f9/ee0/6f9ee044146aecfd841c98f2a270d996b3e33440142456b9b4349c8bc681857c:200" alt="Ollama Logo" width="100" height="100" >
+   <img src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/discord-round-color-icon.png" alt="Discord Logo" width="100" height="100">
    
 
    </div>
