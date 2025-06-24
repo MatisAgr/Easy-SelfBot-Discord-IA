@@ -95,11 +95,6 @@ function canSendMessages(channel) {
 
 // Function to format <think> tags as quotes
 function formatThinkTags(text) {
-  // Vérifier que text est défini et est une chaîne
-  if (!text || typeof text !== 'string') {
-    logger.warn(`formatThinkTags received invalid input: ${typeof text}, value: ${text}`);
-    return '';
-  }
 
   // Check if text contains <think> tags
   if (text.includes('<think>') && text.includes('</think>')) {
@@ -271,7 +266,37 @@ client.on('messageCreate', async (message) => {
 
     const history = conversationHistory.get(channelId);
 
-    // Build prompt with context and history
+        const messages = [
+      {
+        role: "system",
+        content: BOT_CONTEXT
+      }
+    ];
+
+    // Add history as proper chat messages if available
+    if (history.length > 0) {
+      history.forEach((entry) => {
+        if (entry.author === client.user.username) {
+          messages.push({
+            role: "assistant",
+            content: entry.content
+          });
+        } else {
+          messages.push({
+            role: "user", 
+            content: `${entry.author}: ${entry.content}`
+          });
+        }
+      });
+    }
+
+    // Add current message
+    messages.push({
+      role: "user",
+      content: `${message.author.username}: ${message.content}`
+    });
+    
+    // Prepare the full prompt
     let fullPrompt = "";
 
     // Add history if available
@@ -289,16 +314,7 @@ client.on('messageCreate', async (message) => {
     // Prepare request to Ollama
     const payload = {
       model: MODEL,
-      messages: [
-        {
-          role: "system",
-          content: BOT_CONTEXT
-        },
-        {
-          role: "user",
-          content: fullPrompt
-        }
-      ],
+      messages: messages,
       stream: false
     };
 
@@ -309,14 +325,14 @@ client.on('messageCreate', async (message) => {
       return await axios.post(OLLAMA_API_URL, payload, {
         headers: { 'Content-Type': 'application/json' }
       });
-    }); logger.success(`Received response from Ollama`);
+    });
+    logger.success(`Received response from Ollama`);
 
     if (DEBUG_MODE) {
       logger.info('=== DEBUG: Full Ollama Response ===');
       console.log(JSON.stringify(response.data, null, 2));
       logger.info('=== END DEBUG ===');
     }
-
     lastActivityTime.set(channelId, Date.now());
     let generatedResponse = response.data.message.content;
 
