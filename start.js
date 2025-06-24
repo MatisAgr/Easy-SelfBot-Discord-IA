@@ -180,7 +180,7 @@ async function showTypingUntilDone(channel, operation) {
 
 function checkInactiveChannels() {
   const currentTime = Date.now();
-  
+
   lastActivityTime.forEach((lastTime, channelId) => {
     // If more than 5 minutes have passed since the last activity
     if (currentTime - lastTime > INACTIVITY_TIMEOUT) {
@@ -188,7 +188,7 @@ function checkInactiveChannels() {
       if (conversationHistory.has(channelId)) {
         const channelInfo = client.channels.cache.get(channelId);
         const channelName = channelInfo ? (channelInfo.name || 'DM') : 'Unknown channel';
-        
+
         logger.info(`Resetting conversation history for inactive channel #${channelName} (${channelId})`);
         conversationHistory.set(channelId, []); // Reset the history
         lastActivityTime.delete(channelId); // Delete the time entry for this channel
@@ -213,11 +213,11 @@ function checkInactiveChannels() {
 
 client.on('ready', () => {
   logger.success(`Connected as ${client.user.tag}`);
-  
+
   // Set up an interval to regularly check inactive channels
   setInterval(checkInactiveChannels, 60000); // Check every minute
   logger.info('Inactivity checker initialized (5 minute timeout)');
-  
+
   logger.separator();
 });
 
@@ -238,7 +238,7 @@ client.on('messageCreate', async (message) => {
   try {
     // Check if the bot has permission to send messages in the channel
     const hasPermission = canSendMessages(message.channel);
-    
+
     // If the bot doesn't have permission, log a warning and exit early
     if (!hasPermission) {
       logger.warn(`No permission to send messages in channel #${message.channel.name || 'DM'} - skipping Ollama API call`);
@@ -266,7 +266,7 @@ client.on('messageCreate', async (message) => {
     const history = conversationHistory.get(channelId);
 
     // Build prompt with context and history
-    let fullPrompt = BOT_CONTEXT + "\n\n";
+    let fullPrompt = "";
 
     // Add history if available
     if (history.length > 0) {
@@ -283,7 +283,16 @@ client.on('messageCreate', async (message) => {
     // Prepare request to Ollama
     const payload = {
       model: MODEL,
-      prompt: fullPrompt,
+      messages: [
+        {
+          role: "system",
+          content: BOT_CONTEXT
+        },
+        {
+          role: "user",
+          content: fullPrompt
+        }
+      ],
       stream: false
     };
 
@@ -340,7 +349,7 @@ client.on('messageCreate', async (message) => {
       message.guild ? message.guild.name : 'DirectMessages',
       message.channel.name || 'direct',
       message.author.username
-      );
+    );
 
     logConversation({
       userId: message.author.id,
@@ -391,7 +400,7 @@ function logConversation(userData, botResponse) {
       try {
         const fileContent = fs.readFileSync(LOGS_FILE_PATH, 'utf8');
         logs = JSON.parse(fileContent);
-        
+
         // Check if the logs are an array
         if (!Array.isArray(logs)) {
           logger.warn('Le fichier de logs n\'est pas un tableau valide, création d\'un nouveau');
@@ -409,7 +418,7 @@ function logConversation(userData, botResponse) {
 
     // Write the updated logs back to the file
     fs.writeFileSync(LOGS_FILE_PATH, JSON.stringify(logs, null, 2), 'utf8');
-    
+
     logger.info(`Conversation logged to ${LOGS_FILE_PATH}`);
   } catch (error) {
     logger.error(`Error logging conversation: ${error.message}`);
@@ -422,14 +431,14 @@ function logConversation(userData, botResponse) {
 
 function saveMemoryToFile(fullPrompt, serverName, channelName, authorUsername) {
   if (!SAVE_MEMORY) return;
-  
+
   try {
     // Assurez-vous que fullPrompt est une chaîne
     if (typeof fullPrompt !== 'string') {
       fullPrompt = String(fullPrompt || '');
       logger.warn('fullPrompt n\'est pas une chaîne, conversion forcée');
     }
-  
+
     // Sanitiser les noms pour les chemins de fichier
     const sanitizeForPath = name => {
       if (typeof name !== 'string') {
@@ -437,37 +446,37 @@ function saveMemoryToFile(fullPrompt, serverName, channelName, authorUsername) {
       }
       return name.replace(/[\\/:*?"<>|]/g, '_').trim();
     };
-    
+
     const safeSeverName = sanitizeForPath(serverName || 'UnknownServer');
     const safeChannelName = sanitizeForPath(channelName || 'UnknownChannel');
     const safeAuthorName = sanitizeForPath(authorUsername || 'unknown');
-    
+
     // Créer le format d'heure hhmmss
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     const timestamp = `${hours}${minutes}${seconds}`;
-    
+
     // Créer les dossiers s'ils n'existent pas
     const serverFolder = path.join(MEMORY_FOLDER, safeSeverName);
     if (!fs.existsSync(serverFolder)) {
       fs.mkdirSync(serverFolder, { recursive: true });
     }
-    
+
     const channelFolder = path.join(serverFolder, safeChannelName);
     if (!fs.existsSync(channelFolder)) {
       fs.mkdirSync(channelFolder, { recursive: true });
     }
-    
+
     // Créer le nom de fichier avec le nom de l'auteur
     const filename = `raw_prompt_${safeAuthorName}_${timestamp}.txt`;
     const filePath = path.join(channelFolder, filename);
-    
+
     // Écrire le prompt brut dans le fichier
     fs.writeFileSync(filePath, fullPrompt, 'utf8');
     logger.info(`Raw prompt saved to ${safeSeverName}/${safeChannelName}/${filename}`);
-    
+
     // Limiter le nombre de fichiers
     const files = fs.readdirSync(channelFolder)
       .filter(file => file.startsWith('raw_prompt_'))
@@ -477,14 +486,14 @@ function saveMemoryToFile(fullPrompt, serverName, channelName, authorUsername) {
         time: fs.statSync(path.join(channelFolder, file)).mtime.getTime()
       }))
       .sort((a, b) => b.time - a.time);  // Tri par date décroissante
-    
+
     if (files.length > HISTORY_LIMIT) {
       for (let i = HISTORY_LIMIT; i < files.length; i++) {
         fs.unlinkSync(files[i].path);
         logger.info(`Removed old raw prompt file: ${files[i].name}`);
       }
     }
-    
+
     return filePath;
   } catch (error) {
     logger.error(`Error saving raw prompt: ${error.message}`);
