@@ -12,6 +12,8 @@ This project is a Discord bot that uses AI models through Ollama API to generate
 
 ![image](https://github.com/user-attachments/assets/82f02218-0595-41bf-9963-c0cce5732fa1)
 
+![image](https://github.com/user-attachments/assets/df9ec8d1-e80b-42f0-b72d-b507958f17ca)
+
 
 <h3> Console : </h3>
 
