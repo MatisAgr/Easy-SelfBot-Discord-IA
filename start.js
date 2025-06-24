@@ -38,9 +38,9 @@ const MEMORY_FOLDER = process.env.MEMORY_FOLDER || path.join(__dirname, 'bot_mem
 // Discord message character limit (free accounts)
 const MESSAGE_CHAR_LIMIT = 2000;
 const lastActivityTime = new Map();
-// Inactivity duration before reset (in ms) - 5 minutes
-// TEMPORARY SOLUTION: Simple timeout mechanism for memory optimization
-const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
+// Inactivity duration before reset (configurable in minutes via env, 0 = disabled)
+const INACTIVITY_TIMEOUT_MINUTES = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '5', 10);
+const INACTIVITY_TIMEOUT = INACTIVITY_TIMEOUT_MINUTES > 0 ? INACTIVITY_TIMEOUT_MINUTES * 60 * 1000 : 0; // Convert minutes to milliseconds, 0 = disabled
 
 // Structure to store conversation history by channel
 const conversationHistory = new Map();
@@ -64,6 +64,7 @@ logger.info(`Use history conversation: ${USE_HISTORY_CONVERSATION}`);
 if (USE_HISTORY_CONVERSATION) {
   logger.info(`Channel message history: ${NB_MESSAGES_HISTORY} messages per channel`);
 }
+logger.info(`Inactivity timeout: ${INACTIVITY_TIMEOUT_MINUTES === 0 ? 'disabled (infinite memory)' : `${INACTIVITY_TIMEOUT_MINUTES} minutes`}`);
 logger.info(`Show thinking : ${SHOW_THINKING}`);
 logger.info(`Log conversations: ${LOG_CONVERSATIONS}`);
 if (LOG_CONVERSATIONS) {
@@ -191,14 +192,14 @@ async function showTypingUntilDone(channel, operation) {
 
 function checkInactiveChannels() {
   const currentTime = Date.now();
-
   lastActivityTime.forEach((lastTime, channelId) => {
-    // If more than 5 minutes have passed since the last activity
+    // If more than the configured timeout has passed since the last activity
     if (currentTime - lastTime > INACTIVITY_TIMEOUT) {
       // If there is a history for this channel
       if (conversationHistory.has(channelId)) {
         const channelInfo = client.channels.cache.get(channelId);
-        const channelName = channelInfo ? (channelInfo.name || 'DM') : 'Unknown channel';        logger.info(`Resetting conversation history for inactive channel #${channelName} (${channelId})`);
+        const channelName = channelInfo ? (channelInfo.name || 'DM') : 'Unknown channel';        
+        logger.info(`Resetting conversation history for inactive channel #${channelName} (${channelId})`);
         conversationHistory.set(channelId, []); // Reset the bot conversation history
         channelMessageHistory.set(channelId, []); // Reset the channel message history
         lastActivityTime.delete(channelId); // Delete the time entry for this channel
@@ -223,10 +224,14 @@ function checkInactiveChannels() {
 
 client.on('ready', () => {
   logger.success(`Connected as ${client.user.tag}`);
-
-  // Set up an interval to regularly check inactive channels
-  setInterval(checkInactiveChannels, 60000); // Check every minute
-  logger.info('Inactivity checker initialized (5 minute timeout)');
+  
+  // Set up an interval to regularly check inactive channels (only if timeout is enabled)
+  if (INACTIVITY_TIMEOUT > 0) {
+    setInterval(checkInactiveChannels, 60000); // Check every minute
+    logger.info(`Inactivity checker initialized (${INACTIVITY_TIMEOUT_MINUTES} minute timeout)`);
+  } else {
+    logger.info('Inactivity checker disabled - infinite memory mode');
+  }
 
   logger.separator();
 });
