@@ -44,8 +44,14 @@ const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
 
 // Structure to store conversation history by channel
 const conversationHistory = new Map();
+// Structure to store channel message history (for context)
+const channelMessageHistory = new Map();
 // Limit of history messages to keep per channel
 const HISTORY_LIMIT = parseInt(process.env.HISTORY_LIMIT || '10', 10);
+// Use history conversation feature
+const USE_HISTORY_CONVERSATION = (process.env.USE_HISTORY_CONVERSATION || 'true').toLowerCase() === 'true';
+// Number of recent messages to keep in memory per channel
+const NB_MESSAGES_HISTORY = parseInt(process.env.NB_MESSAGES_HISTORY || '10', 10);
 // Initial bot context
 const BOT_CONTEXT = process.env.BOT_CONTEXT || "Do what do you want, but be nice and respectful.";
 
@@ -54,6 +60,10 @@ logger.info('Starting Discord self-bot...');
 logger.info(`Ollama API URL: ${OLLAMA_API_URL}`);
 logger.info(`Model: ${MODEL || 'Not specified (will use Ollama default)'}`);
 logger.info(`History limit: ${HISTORY_LIMIT} messages per channel`);
+logger.info(`Use history conversation: ${USE_HISTORY_CONVERSATION}`);
+if (USE_HISTORY_CONVERSATION) {
+  logger.info(`Channel message history: ${NB_MESSAGES_HISTORY} messages per channel`);
+}
 logger.info(`Show thinking : ${SHOW_THINKING}`);
 logger.info(`Log conversations: ${LOG_CONVERSATIONS}`);
 if (LOG_CONVERSATIONS) {
@@ -188,10 +198,9 @@ function checkInactiveChannels() {
       // If there is a history for this channel
       if (conversationHistory.has(channelId)) {
         const channelInfo = client.channels.cache.get(channelId);
-        const channelName = channelInfo ? (channelInfo.name || 'DM') : 'Unknown channel';
-
-        logger.info(`Resetting conversation history for inactive channel #${channelName} (${channelId})`);
-        conversationHistory.set(channelId, []); // Reset the history
+        const channelName = channelInfo ? (channelInfo.name || 'DM') : 'Unknown channel';        logger.info(`Resetting conversation history for inactive channel #${channelName} (${channelId})`);
+        conversationHistory.set(channelId, []); // Reset the bot conversation history
+        channelMessageHistory.set(channelId, []); // Reset the channel message history
         lastActivityTime.delete(channelId); // Delete the time entry for this channel
         // delete memory file
         const serverName = channelInfo.guild ? channelInfo.guild.name : 'DirectMessages';
@@ -222,7 +231,37 @@ client.on('ready', () => {
   logger.separator();
 });
 
-// Listen for incoming messages
+// Listen for ALL messages to build channel history
+client.on('messageCreate', async (msg) => {
+  // Skip bot messages and system messages
+  if (msg.author.bot || msg.system) return;
+  
+  if (USE_HISTORY_CONVERSATION) {
+    const channelId = msg.channel.id;
+    
+    // Initialize channel message history if needed
+    if (!channelMessageHistory.has(channelId)) {
+      channelMessageHistory.set(channelId, []);
+    }
+    
+    const messageHistory = channelMessageHistory.get(channelId);
+    
+    // Add message to history
+    messageHistory.push({
+      author: msg.author.username,
+      content: msg.content,
+      timestamp: msg.createdAt,
+      id: msg.id
+    });
+    
+    // Limit history size per channel
+    if (messageHistory.length > NB_MESSAGES_HISTORY) {
+      messageHistory.shift(); // Remove oldest message
+    }
+  }
+});
+
+// Listen for incoming messages (mentions only for bot responses)
 client.on('messageCreate', async (message) => {
 
   if (!message.mentions.has(client.user.id) || message.author.id === client.user.id) return;
@@ -262,18 +301,35 @@ client.on('messageCreate', async (message) => {
     if (!conversationHistory.has(channelId)) {
       logger.info(`Initializing new conversation history for channel ${message.channel.name || 'DM'}`);
       conversationHistory.set(channelId, []);
-    }
+    }    const history = conversationHistory.get(channelId);
 
-    const history = conversationHistory.get(channelId);
-
-        const messages = [
+    const messages = [
       {
         role: "system",
         content: BOT_CONTEXT
       }
     ];
 
-    // Add history as proper chat messages if available
+    // Add recent channel message history if enabled
+    if (USE_HISTORY_CONVERSATION && channelMessageHistory.has(channelId)) {
+      const recentMessages = channelMessageHistory.get(channelId);
+      
+      if (recentMessages.length > 0) {
+        logger.info(`Adding ${recentMessages.length} recent messages from channel history`);
+        
+        recentMessages.forEach((msg) => {
+          // Don't add the current message again (it will be added later)
+          if (msg.id !== message.id) {
+            messages.push({
+              role: "user",
+              content: `${msg.author}: ${msg.content}`
+            });
+          }
+        });
+      }
+    }
+
+    // Add bot conversation history as proper chat messages if available
     if (history.length > 0) {
       history.forEach((entry) => {
         if (entry.author === client.user.username) {
@@ -295,15 +351,30 @@ client.on('messageCreate', async (message) => {
       role: "user",
       content: `${message.author.username}: ${message.content}`
     });
-    
-    // Prepare the full prompt
+      // Prepare the full prompt
     let fullPrompt = "";
 
-    // Add history if available
+    // Add recent channel message history if enabled
+    if (USE_HISTORY_CONVERSATION && channelMessageHistory.has(channelId)) {
+      const recentMessages = channelMessageHistory.get(channelId);
+      
+      if (recentMessages.length > 0) {
+        fullPrompt += "Recent channel conversation:\n";
+        recentMessages.forEach((msg) => {
+          // Don't add the current message again
+          if (msg.id !== message.id) {
+            fullPrompt += `${msg.author}: ${msg.content}\n`;
+          }
+        });
+        fullPrompt += "\n";
+      }
+    }
+
+    // Add bot conversation history if available
     if (history.length > 0) {
-      fullPrompt += "Previous conversation:\n";
+      fullPrompt += "Previous conversation with bot:\n";
       history.forEach((entry) => {
-        fullPrompt += `${entry.author} : ${entry.content}\n`;
+        fullPrompt += `${entry.author}: ${entry.content}\n`;
       });
       fullPrompt += "\n";
     }
