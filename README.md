@@ -55,12 +55,13 @@ Before you begin, ensure you have the following installed:
 
 ## Configuration
 
-1. Rename the `.env.exemple` file to `.env`.
+1. Rename the `.env.example` file to `.env`.
 2. Fill in the environment variables in the `.env` file:
    - `DISCORD_TOKEN`: Your Discord token (get it [here](https://gist.github.com/MarvNC/e601f3603df22f36ebd3102c501116c6)).
    - `HISTORY_LIMIT`: The number of bot conversation pairs to keep in memory (default: 10).
    - `USE_HISTORY_CONVERSATION`: Whether to enable channel message history tracking (default: true).
    - `NB_MESSAGES_HISTORY`: Number of recent channel messages to keep for context (default: 10).
+   - `INACTIVITY_TIMEOUT_MINUTES`: Minutes before resetting channel memory due to inactivity. Set to 0 for infinite memory (default: 30).
    - `OLLAMA_API_URL`: The URL of the Ollama API (default: "http://localhost:11434").
    - `OLLAMA_MODEL`: The name of the model to use with Ollama (check available models with `ollama list`).
    - `BOT_CONTEXT`: The context for the bot when generating responses.
@@ -104,7 +105,7 @@ The bot will connect to your Discord account and start listening for messages. I
 - Tracks all channel messages in real-time for context (optional)
 - Maintains separate memory per channel
 - Automatically manages memory limits to prevent overflow
-- Resets inactive channel memories after 5 minutes
+- Resets inactive channel memories after 30 minutes (configurable)
 
 ## Dependencies
 
